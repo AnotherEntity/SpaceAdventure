@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Space</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.8.2/pixi.min.js"></script>
+  <link href="https://fonts.googleapis.com/css?family=VT323" rel="stylesheet">
+  <style>
+*{
+  padding:0;
+  margin:0;
+}
+#Health{
+  position:absolute;
+  top:2px;
+  left:2px;
+  font-size:16px;
+  color:#ffffff;
+  font-family:VT323;
+}
+#Speed{
+  position:absolute;
+  top:20px;
+  left:2px;
+  font-size:16px;
+  color:#ffffff;
+  font-family:VT323;
+}
+  </style>
+</head>
+  <body>
+    <p id="Health">Health: </p>
+    <p id="Speed">Speed: </p>
+    <script>
+//Capture keys
+var keysDown = {}
+addEventListener("keydown", function (e) {
+  keysDown[e.keyCode] = true;
+},false);
+addEventListener("keyup", function (e) {
+  delete keysDown[e.keyCode];
+},false);
+
+var app = new PIXI.Application(800, 600, {backgroundColor : 0x111111});
+document.body.appendChild(app.view);
+
+var background = new PIXI.Container();
+app.stage.addChild(background);
+
+var resources = {
+  background: PIXI.Texture.fromImage('Assets/background.png'),
+  redShips: [
+    PIXI.Texture.fromImage('Assets/Ships/ship_red.png'),
+    PIXI.Texture.fromImage('Assets/Ships/battleship_red.png')
+  ],
+  blueShips: [
+    PIXI.Texture.fromImage('Assets/Ships/ship_blue.png'),
+    PIXI.Texture.fromImage('Assets/Ships/battleship_blue.png')
+  ],
+  greenShips: [
+    PIXI.Texture.fromImage('Assets/Ships/ship_green.png'),
+    PIXI.Texture.fromImage('Assets/Ships/battleship_green.png')
+  ],
+  yellowShips: [
+    PIXI.Texture.fromImage('Assets/Ships/ship_yellow.png'),
+    PIXI.Texture.fromImage('Assets/Ships/battleship_yellow.png')
+  ],
+}
+
+for(x=0;x<100;x++){
+  let wallpaper = new PIXI.Sprite(resources.background)
+  wallpaper.x = ((x % 10) * 400) - 2000
+  wallpaper.y = (Math.floor(x / 10) * 400) - 2000
+  background.addChild(wallpaper)
+}
+
+function Ship(x, y, speed, rotation, health, type, team){
+  if(team == 'red'){
+    this.sprite = new PIXI.Sprite(resources.redShips[type.texture])
+  }
+  if(team == 'blue'){
+    this.sprite = new PIXI.Sprite(resources.blueShips[type.texture])
+  }
+  if(team == 'green'){
+    this.sprite = new PIXI.Sprite(resources.greenShips[type.texture])
+  }
+  if(team == 'yellow'){
+    this.sprite = new PIXI.Sprite(resources.yellowShips[type.texture])
+  }
+  app.stage.addChild(this.sprite)
+  this.sprite.anchor.set(0.5)
+  this.sprite.x = x
+  this.sprite.y = y
+  this.sprite.rotation = rotation
+  this.sprite.height = type.height
+  this.sprite.width = type.width
+  this.speed = speed
+  this.health = health
+  this.maxHealth = type.maxHealth
+  this.maxSpeed = type.maxSpeed
+  this.minSpeed = type.minSpeed
+  this.accelaration = type.accelaration
+  this.turnSpeed = type.turnSpeed
+
+  this.fast = function(delta){
+    this.speed += delta * this.accelaration
+    if(this.speed > this.maxSpeed) this.speed = this.maxSpeed
+
+  }
+  this.slow = function(delta){
+    this.speed -= delta * this.accelaration
+    if(this.speed < this.minSpeed) this.speed = this.minSpeed
+  }
+  this.turnLeft = function(delta){
+    this.sprite.rotation -= this.turnSpeed * delta
+  }
+  this.turnRight = function(delta){
+    this.sprite.rotation += this.turnSpeed * delta
+  }
+  this.fly = function(delta){
+    //Move player in direction facing
+    this.sprite.x += this.speed * Math.sin(Math.PI - this.sprite.rotation) * delta
+    this.sprite.y += this.speed * Math.cos(Math.PI - this.sprite.rotation) * delta
+  }
+  this.edge = function(delta){
+    if(this.sprite.x < -2000){
+      this.sprite.x = -2000
+      this.speed = 0
+    }
+    if(this.sprite.x > 2000){
+      this.sprite.x = 2000
+      this.speed = 0
+    }
+    if(this.sprite.y < -2000){
+      this.sprite.y = -2000
+      this.speed = 0
+    }
+    if(this.sprite.y > 2000){
+      this.sprite.y = 2000
+      this.speed = 0
+    }
+  }
+}
+
+var player = new Ship(
+app.screen.width/2,
+app.screen.height/2,
+0,
+0,
+100,
+{minSpeed: -1,maxSpeed:5,maxHealth:100,width:32,height:32,turnSpeed:0.035, accelaration:0.05, texture:0},
+'red')
+
+var otherExampleShip = new Ship(
+500,
+500,
+3,
+0,
+100,
+{minSpeed: -1,maxSpeed:5,maxHealth:100,width:64,height:64,turnSpeed:0.035, accelaration:0.05, texture:1},
+'blue')
+
+//Main Game Loop
+app.ticker.add(function(delta) {
+  if(87 in keysDown) player.fast(delta) //W
+  if(83 in keysDown) player.slow(delta) //S
+  if(65 in keysDown) player.turnLeft(delta) //A
+  if(68 in keysDown) player.turnRight(delta) //D
+
+  //Move Player
+  player.fly(delta)
+
+  //Check for map boundary
+  player.edge()
+
+  //Move camera as well
+  app.stage.x = -player.sprite.x + app.screen.width/2
+  app.stage.y = -player.sprite.y + app.screen.height/2
+
+  otherExampleShip.fly(delta)
+  otherExampleShip.edge()
+
+  document.getElementById("Health").innerHTML = "Health: " + player.health + "/" + player.maxHealth
+  document.getElementById("Speed").innerHTML = "Speed: " + Math.floor(player.speed) + "/" + player.maxSpeed
+});
+    </script>
+  </body>
+</html>
