@@ -177,8 +177,10 @@ app.ticker.add(function(delta) {
   app.stage.x = -player.sprite.x + app.screen.width/2
   app.stage.y = -player.sprite.y + app.screen.height/2
 
+  /*
   otherExampleShip.fly(delta)
   otherExampleShip.edge()
+  */
 
   document.getElementById("Health").innerHTML = "Health: " + player.health + "/" + player.maxHealth
   document.getElementById("Speed").innerHTML = "Speed: " + Math.floor(player.speed) + "/" + player.maxSpeed
